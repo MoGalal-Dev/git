@@ -1,0 +1,230 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model client {
+  Id                          Int                           @unique(map: "Id_UNIQUE") @default(autoincrement())
+  FireBaseId                  String                        @unique(map: "FireBaseId_UNIQUE") @db.VarChar(255)
+  Name                        String                        @db.VarChar(255)
+  Email                       String?                       @unique(map: "User_Email_key") @db.VarChar(255)
+  EducationTypeId             Int
+  GradeId                     Int
+  Avatar                      Int
+  PhoneNumber                 String                        @db.VarChar(255)
+  Points                      Int                           @default(0)
+  Rank                        Int                           @default(0)
+  Balance                     Decimal                       @default(0.00) @db.Decimal(18, 2)
+  ClientLiveToken             String?                       @unique(map: "ClientLiveToken_UNIQUE") @db.VarChar(255)
+  CreatedDate                 DateTime                      @db.DateTime(0)
+  educationtype               educationtype                 @relation(fields: [EducationTypeId], references: [Id], onUpdate: NoAction, map: "FK_Client_EducationType")
+  grade                       grade                         @relation(fields: [GradeId], references: [Id], onUpdate: NoAction, map: "FK_Client_Grade")
+  competition_enrolled_client competition_enrolled_client[]
+  competition_history         competition_history[]
+  device                      device[]
+  roles                       roles[]
+  transaction                 transaction[]
+
+  @@id([Id, EducationTypeId, GradeId])
+  @@index([EducationTypeId], map: "FK_Client_EducationType")
+  @@index([GradeId], map: "FK_Client_Grade")
+}
+
+model competition {
+  Id                          Int                           @unique(map: "Id_UNIQUE") @default(autoincrement())
+  FireBaseId                  String                        @unique(map: "FireBaseId_UNIQUE") @db.VarChar(255)
+  Name                        String                        @db.VarChar(255)
+  Type                        String                        @db.VarChar(255)
+  Description                 String                        @db.VarChar(255)
+  EducationTypeId             Int
+  GradeId                     Int
+  Gift                        String                        @db.VarChar(255)
+  Status                      String                        @db.VarChar(255)
+  CreatedBy                   Int
+  UpdatedBy                   Int?
+  CreatedDate                 DateTime                      @db.DateTime(0)
+  UpdatedDate                 DateTime?                     @db.DateTime(0)
+  StartTime                   DateTime                      @db.DateTime(0)
+  QuestionPoints              Int
+  QuestionTimer               Int
+  CurrentOnlineClients        Int                           @default(0)
+  RequiredPoints              Int                           @default(0)
+  Scheduled_Time              DateTime                      @db.Time(0)
+  WinnersCount                Int?                          @default(0)
+  LosersCount                 Int?                          @default(0)
+  CompetitionReference        String                        @db.VarChar(45)
+  CompetitionStatus           String?                       @default("Offline") @db.VarChar(45)
+  educationtype               educationtype                 @relation(fields: [EducationTypeId], references: [Id], onUpdate: NoAction, map: "FK_Competition_EducationType")
+  grade                       grade                         @relation(fields: [GradeId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "fk_competition_grade1")
+  competition_enrolled_client competition_enrolled_client[]
+  competition_history         competition_history[]
+  competitions_questions      competitions_questions[]
+
+  @@id([Id, GradeId, EducationTypeId, CreatedBy])
+  @@index([EducationTypeId], map: "FK_Competition_EducationType")
+  @@index([GradeId], map: "fk_competition_grade1_idx")
+  @@index([UpdatedBy], map: "fk_competition_user1_idx")
+  @@index([CreatedBy], map: "fk_competition_user2_idx")
+}
+
+model competition_enrolled_client {
+  Id             Int         @unique(map: "Id_UNIQUE") @default(autoincrement())
+  Competition_Id Int
+  Client_Id      Int
+  Status         String?     @db.VarChar(45)
+  client         client      @relation(fields: [Client_Id], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "fk_competition_enrolled_client_client1")
+  competition    competition @relation(fields: [Competition_Id], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "fk_competition_enrolled_client_competition1")
+
+  @@id([Id, Competition_Id, Client_Id])
+  @@index([Client_Id], map: "fk_competition_enrolled_client_client1_idx")
+  @@index([Competition_Id], map: "fk_competition_enrolled_client_competition1_idx")
+}
+
+model competition_history {
+  Id            Int         @unique(map: "Id_UNIQUE") @default(autoincrement())
+  Reason        String?     @db.VarChar(255)
+  ClientId      Int
+  CompetitionId Int
+  Status        String?     @db.VarChar(45)
+  client        client      @relation(fields: [ClientId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "fk_competition_history_client1")
+  competition   competition @relation(fields: [CompetitionId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "fk_competition_history_competition1")
+
+  @@id([Id, ClientId, CompetitionId])
+  @@index([CompetitionId], map: "fk_Competition_ReasonOfLosing_idx")
+  @@index([ClientId], map: "fk_client_ReasonOfLosing_idx")
+}
+
+model competitions_questions {
+  Id              Int           @unique(map: "Id_UNIQUE") @default(autoincrement())
+  Competitions_Id Int
+  Questions_Id    Int
+  Grade_Id        Int
+  Education_Id    Int
+  competition     competition   @relation(fields: [Competitions_Id], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "fk_competitions_questions_competition1")
+  educationtype   educationtype @relation(fields: [Education_Id], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "fk_competitions_questions_educationtype1")
+  grade           grade         @relation(fields: [Grade_Id], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "fk_competitions_questions_grade1")
+  question        question      @relation(fields: [Questions_Id], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "fk_competitions_questions_question1")
+
+  @@id([Id, Competitions_Id, Questions_Id, Grade_Id, Education_Id])
+  @@index([Competitions_Id], map: "fk_competitions_questions_competition1_idx")
+  @@index([Education_Id], map: "fk_competitions_questions_educationtype1_idx")
+  @@index([Grade_Id], map: "fk_competitions_questions_grade1_idx")
+  @@index([Questions_Id], map: "fk_competitions_questions_question1_idx")
+}
+
+model device {
+  Id          Int    @id @unique(map: "Id_UNIQUE") @default(autoincrement())
+  Type        String @db.VarChar(45)
+  Status      String @default("Offline") @db.VarChar(45)
+  deviceToken String @db.VarChar(45)
+  ClientId    Int
+  client      client @relation(fields: [ClientId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "fk_device_client1")
+
+  @@index([ClientId], map: "fk_device_client1_idx")
+}
+
+model educationtype {
+  Id                     Int                      @id @unique(map: "Id_UNIQUE") @default(autoincrement())
+  Name                   String                   @db.VarChar(255)
+  IsHide                 Int?
+  Sort                   Int?                     @unique(map: "Sort_UNIQUE")
+  client                 client[]
+  competition            competition[]
+  competitions_questions competitions_questions[]
+  grade                  grade[]
+  question               question[]
+}
+
+model grade {
+  Id                     Int                      @unique(map: "Id_UNIQUE") @default(autoincrement())
+  Name                   String                   @db.VarChar(255)
+  EducationTypeId        Int
+  IsHide                 Int?
+  Sort                   Int?                     @unique(map: "Sort_UNIQUE")
+  educationtype          educationtype            @relation(fields: [EducationTypeId], references: [Id], onUpdate: NoAction, map: "FK_Grade_EducationType")
+  client                 client[]
+  competition            competition[]
+  competitions_questions competitions_questions[]
+  question               question[]
+
+  @@id([Id, EducationTypeId])
+  @@index([EducationTypeId], map: "FK_Grade_EducationType_idx")
+}
+
+model question {
+  Id                     Int                      @unique(map: "Id_UNIQUE") @default(autoincrement())
+  EducationTypeId        Int
+  GradeId                Int
+  Header                 String                   @db.VarChar(255)
+  Answer1                String                   @db.VarChar(255)
+  Answer2                String                   @db.VarChar(255)
+  Answer3                String                   @db.VarChar(255)
+  Answer4                String                   @db.VarChar(255)
+  CorrectAnswer          String                   @db.VarChar(10)
+  DifficultyLevel        Int
+  NumberOfUsage          Int
+  CreatedBy              Int
+  CreatedDate            DateTime                 @db.DateTime(0)
+  UpdatedDate            DateTime?                @db.DateTime(0)
+  UpdatedBy              Int?
+  Subject_Id             Int
+  educationtype          educationtype            @relation(fields: [EducationTypeId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "fk_question_educationtype1")
+  grade                  grade                    @relation(fields: [GradeId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "fk_question_gradeId")
+  subject                subject                  @relation(fields: [Subject_Id], references: [IdSubject], onDelete: NoAction, onUpdate: NoAction, map: "fk_question_subject1")
+  user                   user?                    @relation(fields: [UpdatedBy], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "fk_question_user2")
+  competitions_questions competitions_questions[]
+
+  @@id([Id, EducationTypeId, Subject_Id, GradeId])
+  @@index([EducationTypeId], map: "fk_question_educationtype1_idx")
+  @@index([GradeId], map: "fk_question_grade1_idx")
+  @@index([Subject_Id], map: "fk_question_subject1_idx")
+  @@index([UpdatedBy], map: "fk_question_user2_idx")
+}
+
+model roles {
+  IDRoles  Int    @id @unique(map: "IDRoles_UNIQUE") @default(autoincrement())
+  UserID   Int
+  RoleName String @db.VarChar(45)
+  client   client @relation(fields: [UserID], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "fk_roles_client1")
+
+  @@index([UserID], map: "fk_roles_client1_idx")
+}
+
+model subject {
+  IdSubject Int        @id @default(autoincrement())
+  Title     String     @db.VarChar(45)
+  question  question[]
+}
+
+model systemsetting {
+  idSystemSetting Int    @id @unique(map: "idSystemSetting_UNIQUE") @default(autoincrement())
+  key             String @unique(map: "key_UNIQUE") @db.VarChar(45)
+  value           String @db.VarChar(45)
+}
+
+model transaction {
+  Id          Int      @unique(map: "Id_UNIQUE") @default(autoincrement())
+  Type        String   @db.VarChar(255)
+  Amount      Decimal  @db.Decimal(8, 0)
+  Date        DateTime @db.DateTime(0)
+  Description String   @db.VarChar(255)
+  ClientId    Int
+  client      client   @relation(fields: [ClientId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "fk_transaction_clientId")
+
+  @@id([Id, ClientId])
+  @@index([ClientId], map: "FK_Transaction_ClientId")
+}
+
+model user {
+  Id              Int        @id @unique(map: "Id_UNIQUE") @default(autoincrement())
+  Email           String     @unique(map: "AdminUsers_Email_key") @db.VarChar(255)
+  FireBaseId      String     @unique(map: "FireBaseId_UNIQUE") @db.VarChar(255)
+  Name            String     @db.VarChar(255)
+  PhoneNumber     String     @unique(map: "AdminUsers_PhoneNumber_key") @db.VarChar(255)
+  ClientLiveToken String?    @unique(map: "ClientLiveToken_UNIQUE") @db.VarChar(255)
+  question        question[]
+}
